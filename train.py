@@ -1,15 +1,31 @@
 import argparse
 import torch
 import torchvision
+import random
+import numpy as np
 import importlib
 import json
 import os
 
-
+SEED = 16
 AVAILABLE = {
         'mnist': torchvision.datasets.MNIST,
         'flowers': torchvision.datasets.Flowers102,
         }
+
+##### WRITE YOUR CODE BELOW #####
+def collate_fn(batch):
+    collated = [torchvision.transforms.functional.to_tensor(x[0].resize((32, 32))) for x in batch]
+    
+    return torch.stack(collated)
+#################################
+
+
+def set_seeds(seed):
+    torch.backends.cudnn.benchmark = False
+    torch.manual_seed(seed)
+    random.seed(seed)
+    np.random.seed(seed)
 
 
 if __name__ == '__main__':
@@ -24,11 +40,12 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    set_seeds(SEED)
+
     if args.dataset.lower() not in list(AVAILABLE.keys()):
         raise ValueError('Given dataset not available!')
     dataset = AVAILABLE[args.dataset.lower()]
 
-    ### 
     try:
         trainset = dataset(root='data/', train=True, download=False)
         valset = dataset(root='data/', train=False, download=False)
@@ -36,8 +53,8 @@ if __name__ == '__main__':
         trainset = dataset(root='data/', split='train', download=False)
         valset = dataset(root='data/', split='val', download=False)
 
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=int(args.batchsize), shuffle=True)
-    valloader = torch.utils.data.DataLoader(valset, batch_size=int(args.batchsize), shuffle=False)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=int(args.batchsize), shuffle=True, collate_fn=collate_fn)
+    valloader = torch.utils.data.DataLoader(valset, batch_size=int(args.batchsize), shuffle=False, collate_fn=collate_fn)
 
     if not os.path.exists('checkpoints'):
         os.mkdir('checkpoints')

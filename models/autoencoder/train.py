@@ -1,4 +1,6 @@
 import torch
+import random
+import numpy as np
 from tqdm.auto import trange
 import os
 
@@ -18,7 +20,7 @@ def train(
     lr, num_epoch = config['lr'], config['epoch']
 
     model = AutoEncoder(**model_params)
-    optim = torch.optim.Adam(lr=lr)
+    optim = torch.optim.Adam(model.parameters(), lr=lr)
 
     if checkpoint is not None:
         state_dict = torch.load(checkpoint)
