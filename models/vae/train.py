@@ -4,8 +4,8 @@ import numpy as np
 from tqdm.auto import trange
 import os
 
-from .model import AutoEncoder
-from .loss import BCE
+from .model import VAE
+from .loss import BCE, KL
 from .metric import Accuracy
 from .transform import no_transform, add_noise, binarize
 
@@ -19,7 +19,7 @@ def train(
     model_params, checkpoint = config['model'], config['checkpoint']
     lr, num_epoch = config['lr'], config['epoch']
 
-    model = AutoEncoder(**model_params)
+    model = VAE(**model_params)
     optim = torch.optim.Adam(model.parameters(), lr=lr)
 
     if checkpoint is not None:
@@ -28,11 +28,12 @@ def train(
 
     ##### WRITE YOUR CODE BELOW #####
     bce_loss = BCE()
+    kl_div = KL(beta=5e-4, gamma=1e-6)
     acc_metric = Accuracy()
     #################################
 
     model.train()
-    pbar = trange(num_epoch, desc='Training autoencoder', leave=True)
+    pbar = trange(num_epoch, desc='Training VAE', leave=True)
     for epoch in pbar:
         for x in trainloader:
             ##### WRITE YOUR CODE BELOW #####
@@ -42,10 +43,13 @@ def train(
 
             with torch.set_grad_enabled(True):
                 optim.zero_grad()
-                y_pred = model(x_)
+                mu, sigma = model.encoder(x_)
+                z = model.sample(mu, sigma)
+                y_pred = model.decoder(z)
 
                 ##### WRITE YOUR CODE BELOW #####
                 loss = bce_loss(y_pred, y_target)
+                loss += kl_div(mu, sigma)
                 #################################
 
                 if torch.isnan(loss):
@@ -72,13 +76,13 @@ def train(
         acc_mean = acc_metric.average()
         token = acc_metric.compare(acc_mean)
 
-        pbar.set_description(f"Training autoencoder - Accuracy: {acc_mean}")
+        pbar.set_description(f"Training VAE - Accuracy: {acc_mean}")
 
         acc_metric.reset()
         #################################
         
         if not os.path.exists(os.path.join(rootdir, exp_name)):
-            os.mkdir(os.path.join(rootdir, exp_name))
+            os.mkdir(os.path.exists(os.path.join(rootdir, exp_name)))
 
         if token:
             torch.save({'model': model.state_dict()}, os.path.join(rootdir, exp_name, 'best.pt'))
