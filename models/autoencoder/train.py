@@ -9,7 +9,8 @@ from .transform import no_transform, add_noise, binarize
 
 
 def train(
-        dataloader,
+        trainloader,
+        valloader,
         config,
         ):
     exp_name, rootdir = config['name'], config['dir']
@@ -31,7 +32,7 @@ def train(
     model.train()
     pbar = trange(num_epoch, desc='Training autoencoder', leave=True)
     for epoch in pbar:
-        for x in dataloader:
+        for x in trainloader:
             ##### WRITE YOUR CODE BELOW #####
             x_ = binarize(x)
             y_target = no_transform(x)
@@ -51,6 +52,20 @@ def train(
                 loss.backward()
                 optim.step()
 
+        model.eval()
+        for x in valloader:
+            ##### WRITE YOUR CODE BELOW #####
+            x_ = binarize(x)
+            y_target = no_transform(x)
+            #################################
+
+            with torch.no_grad():
+                y_pred = model(x_)
+
+                ##### WRITE YOUR CODE BELOW #####
+                acc_metric(y_pred, y_target)
+                #################################
+
         ##### WRITE YOUR CODE BELOW #####
         acc_mean = acc_metric.average()
         token = acc_metric.compare(acc_mean)
@@ -59,8 +74,7 @@ def train(
 
         acc_metric.reset()
         #################################
-
-
+        
         if not os.path.exists(os.path.join(rootdir, exp_name)):
             os.mkdir(os.path.exists(os.path.join(rootdir, exp_name)))
 

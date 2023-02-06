@@ -14,17 +14,17 @@ if __name__ == '__main__':
         prog='download',
         description='download datasets for training',
         )
-    parser.add_argument('-n', '--name', required=True)
+    parser.add_argument('-d', '--dataset', required=True)
 
     args = parser.parse_args()
 
-    if args.name.lower() not in list(AVAILABLE.keys()):
+    if args.dataset.lower() not in list(AVAILABLE.keys()):
         raise ValueError()
 
     if not os.path.exists('data'):
         os.mkdir('data')
 
-    dataset = AVAILABLE[args.name.lower()]
+    dataset = AVAILABLE[args.dataset.lower()]
 
     dataset(
         root='data/',

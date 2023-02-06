@@ -112,7 +112,7 @@ class Decoder(nn.Module):
         self.decoder2 = Decoder._block(features//2, features//4)
         self.up3 = Decoder._upblock(features//4, features//4)
 
-        self.out = nn.Conv1d(in_channels=features//4, out_channels=out_channels)
+        self.out = nn.Conv1d(in_channels=features//4, out_channels=out_channels, kernel_size=1)
 
     def forward(self, x):
         x = self.fc(x).view(-1, self.in_shape[0], self.in_shape[1], self.features)

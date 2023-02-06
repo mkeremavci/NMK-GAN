@@ -1,0 +1,13 @@
+{
+    "name": "mnist-ae",
+    "dir": "checkpoints",
+    "model": {
+        "in_channels": 1,
+        "out_channels": 1,
+        "features": 128,
+        "in_shape": [64, 64]
+    },
+    "checkpoint": null,
+    "lr": 1e-3,
+    "epoch": 100
+}
