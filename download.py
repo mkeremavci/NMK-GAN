@@ -1,4 +1,5 @@
 import argparse
+import os
 import torchvision
 
 
@@ -19,6 +20,9 @@ if __name__ == '__main__':
 
     if args.name.lower() not in list(AVAILABLE.keys()):
         raise ValueError()
+
+    if not os.path.exists('data'):
+        os.mkdir('data')
 
     dataset = AVAILABLE[args.name.lower()]
 

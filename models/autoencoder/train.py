@@ -1,16 +1,20 @@
 import torch
 from tqdm.auto import trange
+import os
 
 from .model import AutoEncoder
 from .loss import BCE
-from .transform import no_transform, add_noise
+from .metric import Accuracy
+from .transform import no_transform, add_noise, binarize
 
 
 def train(
         dataloader,
         config,
         ):
-    model_params, checkpoint, lr, num_epoch = config['model'], config['checkpoint'], config['lr'], config['epoch']
+    exp_name, rootdir = config['name'], config['dir']
+    model_params, checkpoint = config['model'], config['checkpoint']
+    lr, num_epoch = config['lr'], config['epoch']
 
     model = AutoEncoder(**model_params)
     optim = torch.optim.Adam(lr=lr)
@@ -21,18 +25,47 @@ def train(
 
     ##### WRITE YOUR CODE BELOW #####
     bce_loss = BCE()
+    acc_metric = Accuracy()
+    #################################
 
     model.train()
-    
-    for epoch in trange(num_epoch, desc='Training autoencoder'):
+    pbar = trange(num_epoch, desc='Training autoencoder', leave=True)
+    for epoch in pbar:
         for x in dataloader:
+            ##### WRITE YOUR CODE BELOW #####
+            x_ = binarize(x)
+            y_target = no_transform(x)
+            #################################
+
             with torch.set_grad_enabled(True):
-                pred = model(transform(x))
-                loss = torch.Tensor
+                optim.zero_grad()
+                y_pred = model(x_)
 
-            
+                ##### WRITE YOUR CODE BELOW #####
+                loss = bce_loss(y_pred, y_target)
+                #################################
 
-        pass
+                if torch.isnan(loss):
+                    raise ValueError(f"NaN encountered in loss per mini-batch calculation, epoch {epoch}.")
 
-    
-    pass
+                loss.backward()
+                optim.step()
+
+        ##### WRITE YOUR CODE BELOW #####
+        acc_mean = acc_metric.average()
+        token = acc_metric.compare(acc_mean)
+
+        pbar.set_description(f"Training autoencoder - Accuracy: {acc_mean}")
+
+        acc_metric.reset()
+        #################################
+
+
+        if not os.path.exists(os.path.join(rootdir, exp_name)):
+            os.mkdir(os.path.exists(os.path.join(rootdir, exp_name)))
+
+        if token:
+            torch.save({'model': model.state_dict()}, os.path.join(rootdir, exp_name, 'best.pt'))
+
+        if (epoch + 1) % 10 == 0:
+            torch.save({'model': model.state_dict()}, os.path.join(rootdir, exp_name, f"{epoch+1}.pt"))

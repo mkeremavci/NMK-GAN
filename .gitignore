@@ -1,7 +1,8 @@
 .DS_Store
 
-# Datasets
+# Datasets and Checkpoints
 data/
+checkpoints/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
