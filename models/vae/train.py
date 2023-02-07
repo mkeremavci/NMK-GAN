@@ -1,6 +1,4 @@
 import torch
-import random
-import numpy as np
 from tqdm.auto import trange
 import os
 
@@ -14,6 +12,7 @@ def train(
         trainloader,
         valloader,
         config,
+        device,
         ):
     exp_name, rootdir = config['name'], config['dir']
     model_params, checkpoint = config['model'], config['checkpoint']
@@ -23,8 +22,12 @@ def train(
     optim = torch.optim.Adam(model.parameters(), lr=lr)
 
     if checkpoint is not None:
-        state_dict = torch.load(checkpoint)
+        print(f"Checkpoint {checkpoint.split('/')[-1:]} is loading...")
+        state_dict = torch.load(checkpoint, map_location=device)
         model.load_state_dict(state_dict['model'])
+
+    model.to(device)
+    model.set_device(device)
 
     ##### WRITE YOUR CODE BELOW #####
     bce_loss = BCE()
@@ -37,8 +40,10 @@ def train(
     for epoch in pbar:
         for x in trainloader:
             ##### WRITE YOUR CODE BELOW #####
-            x_ = binarize(x)
-            y_target = no_transform(x)
+            x_ = no_transform(x)
+            y_target = binarize(x)
+
+            x_, y_target = x_.to(device), y_target.to(device)
             #################################
 
             with torch.set_grad_enabled(True):
@@ -48,8 +53,9 @@ def train(
                 y_pred = model.decoder(z)
 
                 ##### WRITE YOUR CODE BELOW #####
-                loss = bce_loss(y_pred, y_target)
-                loss += kl_div(mu, sigma)
+                rc_loss = bce_loss(y_pred, y_target)
+                kl_loss = kl_div(mu, sigma)
+                loss = rc_loss + kl_loss
                 #################################
 
                 if torch.isnan(loss):
@@ -63,6 +69,8 @@ def train(
             ##### WRITE YOUR CODE BELOW #####
             x_ = binarize(x)
             y_target = no_transform(x)
+
+            x_, y_target = x_.to(device), y_target.to(device)
             #################################
 
             with torch.no_grad():
@@ -73,16 +81,20 @@ def train(
                 #################################
 
         ##### WRITE YOUR CODE BELOW #####
+        rc_mean = bce_loss.average()
+        kl_mean = kl_div.average()
         acc_mean = acc_metric.average()
         token = acc_metric.compare(acc_mean)
 
-        pbar.set_description(f"Training VAE - Accuracy: {acc_mean}")
+        pbar.set_description(f"Training VAE - Accuracy: {acc_mean} - RecLoss: {rc_mean} - KLdiv: {kl_mean}")
 
+        bce_loss.reset()
+        kl_div.reset()
         acc_metric.reset()
         #################################
         
         if not os.path.exists(os.path.join(rootdir, exp_name)):
-            os.mkdir(os.path.exists(os.path.join(rootdir, exp_name)))
+            os.mkdir(os.path.join(rootdir, exp_name))
 
         if token:
             torch.save({'model': model.state_dict()}, os.path.join(rootdir, exp_name, 'best.pt'))

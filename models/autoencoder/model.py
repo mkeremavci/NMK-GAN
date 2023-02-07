@@ -14,11 +14,22 @@ class AutoEncoder(nn.Module):
         self.encoder = Encoder(in_channels, features, in_shape)
         self.decoder = Decoder(out_channels, features, in_shape)
 
+    def set_device(self, device):
+        self.device = device
+        self.encoder.to(device)
+        self.decoder.to(device)
+
     def forward(self, x):
         x = self.encoder(x)
         x = self.decoder(x)
 
         return x
+
+    def encode(self, x):
+        return self.encoder(x)
+
+    def decode(self, x):
+        return self.decoder(x)
 
 
 class Encoder(nn.Module):

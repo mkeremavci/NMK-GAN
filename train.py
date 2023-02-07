@@ -46,6 +46,8 @@ if __name__ == '__main__':
         raise ValueError('Given dataset not available!')
     dataset = AVAILABLE[args.dataset.lower()]
 
+    device = torch.device('cpu' if not torch.cuda.is_available() else 'cuda:0')
+
     try:
         trainset = dataset(root='data/', train=True, download=False)
         valset = dataset(root='data/', train=False, download=False)
@@ -64,4 +66,4 @@ if __name__ == '__main__':
     
     train = importlib.import_module(f"models.{args.model}.train").train
 
-    train(trainloader, valloader, config)
+    train(trainloader, valloader, config, device)

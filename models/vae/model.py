@@ -15,11 +15,29 @@ class VAE(nn.Module):
         self.encoder = Encoder(in_channels, features, in_shape)
         self.decoder = Decoder(out_channels, features, in_shape)
 
+    def set_device(self, device):
+        self.device = device
+        self.encoder.to(device)
+        self.decoder.to(device)
+
     def forward(self, x):
-        return self.decoder(x)
+        mu, sigma = self.encoder(x)
+        z = self.sample(mu, sigma)
+
+        return self.decoder(z)
 
     def sample(self, mu, sigma):
-        return torch.randn(mu.shape) * torch.exp(sigma) + mu
+        z = torch.randn(mu.shape) * torch.exp(sigma).to('cpu') + mu.to('cpu')
+
+        return z.to(self.device)
+
+    def encode(self, x):
+        mu, sigma = self.encoder(x)
+
+        return self.sample(mu, sigma)
+
+    def decode(self, x):
+        return self.decoder(x)
 
 
 class Encoder(nn.Module):

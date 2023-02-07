@@ -22,7 +22,7 @@ class Accuracy:
     def average(self):
         num_samples = np.sum([h[0] for h in self._history])
 
-        return np.average([h[0] * h[1] for h in self._history]) / num_samples
+        return np.sum([h[0] * h[1] for h in self._history]) / num_samples
    
     def reset(self):
         self._history = []
